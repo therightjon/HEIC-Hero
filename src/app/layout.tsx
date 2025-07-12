@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: 'HEIC Hero',
-  description: 'Convert HEIC files to JPEG with AI-powered smart compression.',
+  description: 'Convert HEIC files to JPEG.',
 };
 
 export default function RootLayout({

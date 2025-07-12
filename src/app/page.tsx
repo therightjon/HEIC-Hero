@@ -1,12 +1,24 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { optimizeCompression } from '@/ai/flows/optimize-compression';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { ProcessedFile } from '@/types';
 import { FileUploader } from '@/components/app/file-uploader';
 import { FileList } from '@/components/app/file-list';
+
+// This is a mock function to simulate file conversion.
+// In a real app, you would implement actual HEIC-to-JPEG conversion logic here.
+const convertToJpegMock = async (imageDataUri: string): Promise<{ optimizedImageDataUri: string }> => {
+  return new Promise(resolve => {
+    // Simulate network delay and processing time of a conversion.
+    setTimeout(() => {
+      // For this mock, we just return the original data URI.
+      // A real implementation would return a new data URI for the converted JPEG.
+      resolve({ optimizedImageDataUri: imageDataUri });
+    }, 1500);
+  });
+};
 
 export default function Home() {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
@@ -29,13 +41,12 @@ export default function Home() {
             throw new Error("Could not read file.");
           }
 
-          // In a real-world app, you would convert HEIC to JPEG here before optimization.
-          // For this example, we proceed assuming the input is a processable format for the AI.
-          const result = await optimizeCompression({ imageDataUri });
+          // Simulate conversion instead of calling the AI.
+          const result = await convertToJpegMock(imageDataUri);
 
           setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'completed', optimizedUri: result.optimizedImageDataUri } : f));
         } catch (e) {
-            const error = e instanceof Error ? e.message : 'An unknown AI error occurred';
+            const error = e instanceof Error ? e.message : 'An unknown conversion error occurred';
             setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'failed', error } : f));
             toast({
               variant: 'destructive',
@@ -81,7 +92,7 @@ export default function Home() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold tracking-tight font-headline">HEIC Hero</h1>
           <p className="mt-2 text-lg text-muted-foreground">
-            Effortlessly convert HEIC to JPEG with AI-powered smart compression.
+            Effortlessly convert HEIC to JPEG.
           </p>
         </div>
         <Card className="shadow-lg">
