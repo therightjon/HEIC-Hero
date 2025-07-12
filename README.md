@@ -2,8 +2,7 @@
 
 HEIC Hero is a sleek and efficient web application designed to convert HEIC (High Efficiency Image Container) files into the widely compatible JPEG format. Built with modern web technologies, it offers a fast, user-friendly, and completely client-side conversion process.
 
-![HEIC Hero Screenshot](https://placehold.co/800x450.png)
-*A placeholder screenshot of the HEIC Hero user interface.*
+![HEIC Hero Screenshot](docs/HEIC_Hero_Screenshot.png)
 
 ## ✨ Features
 
