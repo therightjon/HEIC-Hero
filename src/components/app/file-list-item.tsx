@@ -54,7 +54,7 @@ export function FileListItem({ processedFile }: FileListItemProps) {
         return (
           <TooltipProvider delayDuration={0}>
             <Tooltip>
-              <TooltipTrigger as="div" className="flex justify-end w-28">
+              <TooltipTrigger className="flex justify-end w-28">
                 <div className="flex items-center gap-1.5 text-destructive cursor-help">
                   <XCircle className="w-5 h-5" />
                 </div>
