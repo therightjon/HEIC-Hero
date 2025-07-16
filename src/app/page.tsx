@@ -22,6 +22,7 @@ const convertToJpegMock = async (imageDataUri: string): Promise<{ optimizedImage
 
 export default function Home() {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
+
   const { toast } = useToast();
 
   const processFile = useCallback(async (fileId: string) => {
@@ -33,15 +34,19 @@ export default function Home() {
     try {
       const reader = new FileReader();
       reader.readAsDataURL(processedFile.file);
-      
+
       reader.onload = async (event) => {
         try {
           const imageDataUri = event.target?.result as string;
+          console.log(`Starting conversion for file: ${processedFile.file.name}, size: ${processedFile.file.size} bytes, type: ${processedFile.file.type}`);
+
           if (!imageDataUri) {
             throw new Error("Could not read file.");
           }
 
           // Simulate conversion instead of calling the AI.
+          console.log('Simulating conversion process...');
+
           const result = await convertToJpegMock(imageDataUri);
 
           setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'completed', optimizedUri: result.optimizedImageDataUri } : f));
@@ -55,7 +60,9 @@ export default function Home() {
             });
         }
       };
-      
+
+      console.log(`Reading file: ${processedFile.file.name}`);
+
       reader.onerror = () => {
         throw new Error("Failed to read file data.");
       };
@@ -80,6 +87,7 @@ export default function Home() {
   const handleFilesAdded = (addedFiles: File[]) => {
     const newProcessedFiles: ProcessedFile[] = addedFiles.map(file => ({
       id: `${file.name}-${file.lastModified}-${Math.random()}`,
+
       file,
       status: 'waiting',
     }));
@@ -105,3 +113,58 @@ export default function Home() {
     </main>
   );
 }
+
+  async function convertAndDownload(file: File) {
+    console.log(`Attempting to convert and download file: ${file.name}`);
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const image = new Image();
+      image.onload = () => {
+        console.log(`Image loaded. Dimensions: ${image.width}x${image.height}`);
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(image, 0, 0);
+          console.log('Drawing image onto canvas.');
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                console.log(`JPEG blob created successfully. Size: ${blob.size} bytes, type: ${blob.type}`);
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(blob);
+                const downloadFileName = file.name.replace(/.[^.]+$/, '.jpeg');
+                downloadLink.download = downloadFileName;
+                console.log(`Attempting to download file as: ${downloadFileName}`);
+                downloadLink.click();
+                URL.revokeObjectURL(downloadLink.href);
+                console.log('Download link clicked and object URL revoked.');
+              } else {
+                console.error('Error creating JPEG blob: Blob is null.');
+              }
+            },
+            'image/jpeg',
+            0.9
+          );
+        } else {
+          console.error('Error getting canvas context.');
+        }
+      };
+      image.onerror = (error) => {
+        console.error('Error loading image onto canvas:', error);
+      };
+      console.log('Reading image data URI...');
+      image.src = event.target?.result as string;
+    };
+    reader.onerror = (error) => {
+      console.error('Error reading file during download process:', error);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // This part of the code is now outside the Home component's scope
+  // and is not directly related to the state management of the file list.
+  // If you intend to use this function, you'll need to call it from
+  // within the Home component's logic, likely when a file status
+  // changes to 'completed' and the download is triggered.
