@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { ProcessedFile } from '@/types';
 import { FileUploader } from '@/components/app/file-uploader';
 import { FileList } from '@/components/app/file-list';
-import heic2jpeg from 'heic2jpeg';
+import heic2any from 'heic2any';
 
 export default function Home() {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
@@ -19,50 +19,26 @@ export default function Home() {
     setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'processing' } : f));
 
     try {
-      const reader = new FileReader();
-      reader.readAsArrayBuffer(processedFile.file);
-      
-      reader.onload = async (event) => {
-        try {
-          const arrayBuffer = event.target?.result as ArrayBuffer;
-          if (!arrayBuffer) {
-            throw new Error("Could not read file.");
-          }
+      const file = processedFile.file;
 
-          let optimizedImageDataUri: string;
+      let optimizedImageDataUri: string;
 
-          if (processedFile.file.type === 'image/heic') {
-            const jpegBlob = await heic2jpeg({ heic: arrayBuffer, quality: 0.8 }); // Adjust quality as needed
-            optimizedImageDataUri = URL.createObjectURL(jpegBlob);
-          } else {
-            // For non-HEIC images, we can just use the original data URI or convert it if needed
-            const blob = new Blob([arrayBuffer], { type: processedFile.file.type });
-            optimizedImageDataUri = URL.createObjectURL(blob);
-          }
+      if (file.type === 'image/heic') {
+        const resultBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
+        optimizedImageDataUri = URL.createObjectURL(resultBlob as Blob);
+      } else {
+        optimizedImageDataUri = URL.createObjectURL(file);
+      }
 
-          setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'completed', optimizedUri: optimizedImageDataUri } : f));
-        } catch (e) {
-            const error = e instanceof Error ? e.message : 'An unknown conversion error occurred';
-            setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'failed', error } : f));
-            toast({
-              variant: 'destructive',
-              title: 'Conversion Failed',
-              description: `Could not process ${processedFile.file.name}. ${error}`,
-            });
-        }
-      };
-      
-      reader.onerror = () => {
-        throw new Error("Failed to read file data.");
-      };
+      setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'completed', optimizedUri: optimizedImageDataUri } : f));
     } catch (e) {
-      const error = e instanceof Error ? e.message : 'An unknown error occurred';
-      setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'failed', error } : f));
-      toast({
-        variant: 'destructive',
-        title: 'File Read Error',
-        description: `Could not read ${processedFile.file.name}. ${error}`,
-      });
+        const error = e instanceof Error ? e.message : 'An unknown conversion error occurred';
+        setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'failed', error } : f));
+        toast({
+          variant: 'destructive',
+          title: 'Conversion Failed',
+          description: `Could not process ${processedFile.file.name}. ${error}`,
+        });
     }
   }, [files, toast]);
 
