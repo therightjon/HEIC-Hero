@@ -6,19 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { ProcessedFile } from '@/types';
 import { FileUploader } from '@/components/app/file-uploader';
 import { FileList } from '@/components/app/file-list';
-
-// This is a mock function to simulate file conversion.
-// In a real app, you would implement actual HEIC-to-JPEG conversion logic here.
-const convertToJpegMock = async (imageDataUri: string): Promise<{ optimizedImageDataUri: string }> => {
-  return new Promise(resolve => {
-    // Simulate network delay and processing time of a conversion.
-    setTimeout(() => {
-      // For this mock, we just return the original data URI.
-      // A real implementation would return a new data URI for the converted JPEG.
-      resolve({ optimizedImageDataUri: imageDataUri });
-    }, 1500);
-  });
-};
+import heic2jpeg from 'heic2jpeg';
 
 export default function Home() {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
@@ -32,19 +20,27 @@ export default function Home() {
 
     try {
       const reader = new FileReader();
-      reader.readAsDataURL(processedFile.file);
+      reader.readAsArrayBuffer(processedFile.file);
       
       reader.onload = async (event) => {
         try {
-          const imageDataUri = event.target?.result as string;
-          if (!imageDataUri) {
+          const arrayBuffer = event.target?.result as ArrayBuffer;
+          if (!arrayBuffer) {
             throw new Error("Could not read file.");
           }
 
-          // Simulate conversion instead of calling the AI.
-          const result = await convertToJpegMock(imageDataUri);
+          let optimizedImageDataUri: string;
 
-          setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'completed', optimizedUri: result.optimizedImageDataUri } : f));
+          if (processedFile.file.type === 'image/heic') {
+            const jpegBlob = await heic2jpeg({ heic: arrayBuffer, quality: 0.8 }); // Adjust quality as needed
+            optimizedImageDataUri = URL.createObjectURL(jpegBlob);
+          } else {
+            // For non-HEIC images, we can just use the original data URI or convert it if needed
+            const blob = new Blob([arrayBuffer], { type: processedFile.file.type });
+            optimizedImageDataUri = URL.createObjectURL(blob);
+          }
+
+          setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'completed', optimizedUri: optimizedImageDataUri } : f));
         } catch (e) {
             const error = e instanceof Error ? e.message : 'An unknown conversion error occurred';
             setFiles(prev => prev.map(f => f.id === fileId ? { ...f, status: 'failed', error } : f));
